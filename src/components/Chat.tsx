@@ -4,59 +4,55 @@ import {
   Paperclip,
   Image as ImageIcon,
   FileText,
+  Video,
   Download,
   Check,
   CheckCheck,
   Search,
   MoreVertical,
-  Smile,
   X,
-  ArrowLeft
+  ArrowLeft,
+  Loader2,
 } from 'lucide-react';
+import { getUserFromStorage } from '../services/userStorage';
+import { detectUserRole, getSchoolMembers, UserRoleInfo, SchoolMember } from '../services/roleDetectionService';
 import {
-  ChatParticipant,
-  ChatMessage,
-  getChatParticipantsForCounselor,
-  getChatParticipantsForStudent,
-  initializeChatCounts,
   sendMessage,
   subscribeToMessages,
-  resetUnreadCount,
-  getUnreadCount,
-  getLastMessage,
-  isCounselor,
+  markMessagesAsSeen,
+  getChatList,
+  subscribeToChat,
   getAvatarColor,
-} from '../services/chatService';
-import { getUserFromStorage } from '../services/userStorage';
-
-interface Conversation {
-  participantName: string;
-  participantRole: 'counselor' | 'student';
-  initials: string;
-  avatarColor: string;
-  lastMessage: string;
-  unreadCount: number;
-}
+  ChatMessage,
+  ChatListItem,
+  MessageType,
+  ChatParticipant,
+} from '../services/newChatService';
+import { uploadMedia, getMediaTypeFromFile, formatFileSize, UploadProgress } from '../services/mediaUploadService';
 
 interface ChatProps {
   userRole?: 'student' | 'counselor';
 }
 
-const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+const Chat: React.FC<ChatProps> = () => {
+  const [loading, setLoading] = useState(true);
+  const [userInfo, setUserInfo] = useState<UserRoleInfo | null>(null);
+  const [chatList, setChatList] = useState<ChatListItem[]>([]);
+  const [selectedChat, setSelectedChat] = useState<ChatListItem | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showMobileConversations, setShowMobileConversations] = useState(true);
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [userName, setUserName] = useState<string>('');
-  const [userRole, setUserRole] = useState<'student' | 'counselor'>('student');
+  const [uploadingFile, setUploadingFile] = useState<UploadProgress | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const unsubscribeMessagesRef = useRef<(() => void) | null>(null);
+  const chatSubscriptionsRef = useRef<Map<string, () => void>>(new Map());
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -70,59 +66,63 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
     const initializeChat = async () => {
       try {
         const user = getUserFromStorage();
-        console.log('Retrieved user from storage:', user);
-
-        if (!user) {
+        if (!user?.name) {
           console.error('No user found in storage');
           setLoading(false);
           return;
         }
 
-        const name = user.name;
-        console.log('User name:', name);
+        console.log('🔄 Initializing chat for user:', user.name);
 
-        const isUserCounselor = await isCounselor(name);
-        const role = isUserCounselor ? 'counselor' : 'student';
-
-        console.log('Determined user role from Firebase:', role);
-
-        setUserRole(role);
-        setUserName(name);
-
-        let participants: ChatParticipant[] = [];
-
-        if (role === 'counselor') {
-          console.log('Fetching participants for counselor...');
-          participants = await getChatParticipantsForCounselor(name);
-          console.log('Counselor participants received:', participants);
-        } else {
-          console.log('Fetching participants for student...');
-          participants = await getChatParticipantsForStudent(name);
-          console.log('Student participants received:', participants);
+        const roleInfo = await detectUserRole(user.name);
+        if (!roleInfo) {
+          console.error('Could not detect user role');
+          setLoading(false);
+          return;
         }
 
-        console.log('Initializing chat counts...');
-        await initializeChatCounts(name, participants);
+        console.log('✅ User role detected:', roleInfo);
+        setUserInfo(roleInfo);
 
-        console.log('Getting conversation details...');
-        const conversationsWithDetails = await Promise.all(
-          participants.map(async (participant) => {
-            const lastMessage = await getLastMessage(name, participant.name);
-            const unreadCount = await getUnreadCount(name, participant.name);
-
-            return {
-              participantName: participant.name,
-              participantRole: participant.role,
-              initials: participant.initials,
-              avatarColor: getAvatarColor(participant.name),
-              lastMessage,
-              unreadCount,
-            };
-          })
+        const members = await getSchoolMembers(
+          roleInfo.schoolName,
+          roleInfo.userName,
+          roleInfo.role
         );
 
-        console.log('Conversations with details:', conversationsWithDetails);
-        setConversations(conversationsWithDetails);
+        console.log('✅ School members loaded:', members.length);
+
+        const participants: ChatParticipant[] = members.map((member) => ({
+          uid: member.name.replace(/\s+/g, '_').toLowerCase(),
+          name: member.name,
+          role: member.role,
+          initials: member.initials,
+        }));
+
+        const chatListData = await getChatList(user.name, participants);
+        setChatList(chatListData);
+
+        chatListData.forEach((chat) => {
+          if (!chatSubscriptionsRef.current.has(chat.chatId)) {
+            const currentUserId = user.name.replace(/\s+/g, '_').toLowerCase();
+            const unsubscribe = subscribeToChat(chat.chatId, currentUserId, (updates) => {
+              setChatList((prev) =>
+                prev.map((item) =>
+                  item.chatId === chat.chatId
+                    ? {
+                        ...item,
+                        lastMessage: updates.lastMessage,
+                        unreadCount: updates.unreadCount,
+                      }
+                    : item
+                )
+              );
+            });
+
+            chatSubscriptionsRef.current.set(chat.chatId, unsubscribe);
+          }
+        });
+
         setLoading(false);
       } catch (error) {
         console.error('Error initializing chat:', error);
@@ -136,18 +136,20 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
       if (unsubscribeMessagesRef.current) {
         unsubscribeMessagesRef.current();
       }
+      chatSubscriptionsRef.current.forEach((unsubscribe) => unsubscribe());
+      chatSubscriptionsRef.current.clear();
     };
   }, []);
 
   useEffect(() => {
-    if (selectedConversation && userName) {
+    if (selectedChat && userInfo) {
       if (unsubscribeMessagesRef.current) {
         unsubscribeMessagesRef.current();
       }
 
       const unsubscribe = subscribeToMessages(
-        userName,
-        selectedConversation.participantName,
+        userInfo.userName,
+        selectedChat.participant.name,
         (newMessages) => {
           setMessages(newMessages);
         }
@@ -155,15 +157,7 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
 
       unsubscribeMessagesRef.current = unsubscribe;
 
-      resetUnreadCount(userName, selectedConversation.participantName);
-
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.participantName === selectedConversation.participantName
-            ? { ...conv, unreadCount: 0 }
-            : conv
-        )
-      );
+      markMessagesAsSeen(userInfo.userName, selectedChat.participant.name);
 
       return () => {
         if (unsubscribeMessagesRef.current) {
@@ -171,24 +165,20 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
         }
       };
     }
-  }, [selectedConversation, userName]);
+  }, [selectedChat, userInfo]);
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedConversation || !userName) return;
+    if (!messageInput.trim() || !selectedChat || !userInfo) return;
 
     try {
       setSending(true);
-      await sendMessage(userName, selectedConversation.participantName, messageInput.trim());
-      setMessageInput('');
-
-      const lastMessage = messageInput.trim();
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.participantName === selectedConversation.participantName
-            ? { ...conv, lastMessage }
-            : conv
-        )
+      await sendMessage(
+        userInfo.userName,
+        selectedChat.participant.name,
+        messageInput.trim(),
+        'text'
       );
+      setMessageInput('');
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -196,14 +186,47 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
     }
   };
 
-  const handleConversationClick = async (conversation: Conversation) => {
-    setSelectedConversation(conversation);
-    setShowMobileConversations(false);
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: 'image' | 'video' | 'file'
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedChat || !userInfo) return;
+
+    try {
+      setUploadingFile({ progress: 0, status: 'uploading' });
+
+      const mediaType = getMediaTypeFromFile(file);
+      const url = await uploadMedia(file, mediaType, (progress) => {
+        setUploadingFile(progress);
+      });
+
+      await sendMessage(
+        userInfo.userName,
+        selectedChat.participant.name,
+        url,
+        mediaType,
+        file.name,
+        file.size
+      );
+
+      setUploadingFile(null);
+      event.target.value = '';
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setUploadingFile(null);
+    }
   };
 
-  const handleFileAttach = (type: 'image' | 'document') => {
+  const handleAttachClick = (type: 'image' | 'video' | 'file') => {
     setShowAttachMenu(false);
-    fileInputRef.current?.click();
+    if (type === 'image') {
+      imageInputRef.current?.click();
+    } else if (type === 'video') {
+      videoInputRef.current?.click();
+    } else {
+      fileInputRef.current?.click();
+    }
   };
 
   const formatTime = (timestamp: number) => {
@@ -226,54 +249,137 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  const getStatusIcon = (isMe: boolean) => {
-    if (!isMe) return null;
-    return <CheckCheck className="w-4 h-4 text-blue-500" />;
+  const formatMessageDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
   };
 
-  const renderMessage = (message: ChatMessage) => {
-    const isMe = message.senderId === 'me';
+  const getStatusIcon = (status: string, isMe: boolean) => {
+    if (!isMe) return null;
+
+    if (status === 'seen') {
+      return <CheckCheck className="w-4 h-4 text-blue-500" />;
+    } else if (status === 'delivered') {
+      return <CheckCheck className="w-4 h-4 text-gray-500" />;
+    } else {
+      return <Check className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const renderMediaContent = (message: ChatMessage) => {
+    const isMe = userInfo && message.senderId === userInfo.userName.replace(/\s+/g, '_').toLowerCase();
+
+    if (message.type === 'image') {
+      return (
+        <div className="mb-1">
+          <img
+            src={message.content}
+            alt="Shared image"
+            className="max-w-xs rounded-lg cursor-pointer"
+            onClick={() => window.open(message.content, '_blank')}
+          />
+        </div>
+      );
+    } else if (message.type === 'video') {
+      return (
+        <div className="mb-1">
+          <video
+            src={message.content}
+            controls
+            className="max-w-xs rounded-lg"
+          />
+        </div>
+      );
+    } else if (message.type === 'file') {
+      return (
+        <a
+          href={message.content}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center space-x-2 p-3 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-colors"
+        >
+          <FileText className="w-5 h-5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{message.fileName || 'File'}</p>
+            {message.fileSize && (
+              <p className="text-xs opacity-75">{formatFileSize(message.fileSize)}</p>
+            )}
+          </div>
+          <Download className="w-4 h-4" />
+        </a>
+      );
+    }
+
+    return <p className="text-sm">{message.content}</p>;
+  };
+
+  const renderMessage = (message: ChatMessage, index: number) => {
+    const isMe = userInfo && message.senderId === userInfo.userName.replace(/\s+/g, '_').toLowerCase();
+    const showDateSeparator =
+      index === 0 ||
+      formatMessageDate(messages[index - 1].timestamp) !== formatMessageDate(message.timestamp);
 
     return (
-      <div key={message.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-4`}>
-        <div className={`flex ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end max-w-[70%]`}>
-          {!isMe && (
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-2"
-              style={{ backgroundColor: selectedConversation?.avatarColor || '#04ADEE' }}
-            >
-              {selectedConversation?.initials || 'U'}
+      <React.Fragment key={message.messageId}>
+        {showDateSeparator && (
+          <div className="flex justify-center my-4">
+            <div className="px-3 py-1 bg-gray-200 rounded-full text-xs text-gray-600">
+              {formatMessageDate(message.timestamp)}
             </div>
-          )}
+          </div>
+        )}
 
-          <div>
-            <div
-              className={`px-4 py-2 rounded-2xl ${
-                isMe
-                  ? 'bg-[#04ADEE] text-white rounded-br-sm'
-                  : 'bg-gray-200 text-gray-900 rounded-bl-sm'
-              }`}
-            >
-              <p className="text-sm">{message.content}</p>
-            </div>
+        <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-4`}>
+          <div className={`flex ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end max-w-[70%]`}>
+            {!isMe && (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-2 flex-shrink-0"
+                style={{ backgroundColor: getAvatarColor(selectedChat?.participant.name || '') }}
+              >
+                {selectedChat?.participant.initials || 'U'}
+              </div>
+            )}
 
-            <div className={`flex items-center space-x-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-              <span className="text-xs text-gray-500">{formatMessageTime(message.timestamp)}</span>
-              {getStatusIcon(isMe)}
+            <div>
+              <div
+                className={`px-4 py-2 rounded-2xl ${
+                  isMe
+                    ? 'bg-[#04ADEE] text-white rounded-br-sm'
+                    : 'bg-gray-200 text-gray-900 rounded-bl-sm'
+                }`}
+              >
+                {renderMediaContent(message)}
+                {message.type === 'text' && <p className="text-sm">{message.content}</p>}
+              </div>
+
+              <div className={`flex items-center space-x-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                <span className="text-xs text-gray-500">{formatMessageTime(message.timestamp)}</span>
+                {getStatusIcon(message.status, isMe)}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </React.Fragment>
     );
   };
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.participantName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredChatList = chatList.filter((chat) =>
+    chat.participant.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#04ADEE] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading messages...</p>
@@ -284,7 +390,11 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
-      <div className={`${showMobileConversations ? 'block' : 'hidden'} lg:block w-full lg:w-80 bg-white border-r border-gray-200 flex flex-col`}>
+      <div
+        className={`${
+          showMobileConversations ? 'block' : 'hidden'
+        } lg:block w-full lg:w-80 bg-white border-r border-gray-200 flex flex-col`}
+      >
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Messages</h2>
 
@@ -301,41 +411,49 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.length === 0 ? (
+          {filteredChatList.length === 0 ? (
             <div className="text-center py-12 px-4">
               <p className="text-gray-500">No conversations found</p>
             </div>
           ) : (
-            filteredConversations.map((conv) => (
+            filteredChatList.map((chat) => (
               <button
-                key={conv.participantName}
-                onClick={() => handleConversationClick(conv)}
+                key={chat.chatId}
+                onClick={() => {
+                  setSelectedChat(chat);
+                  setShowMobileConversations(false);
+                }}
                 className={`w-full p-4 flex items-start space-x-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-                  selectedConversation?.participantName === conv.participantName ? 'bg-blue-50' : ''
+                  selectedChat?.chatId === chat.chatId ? 'bg-blue-50' : ''
                 }`}
               >
                 <div className="relative">
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold"
-                    style={{ backgroundColor: conv.avatarColor }}
+                    style={{ backgroundColor: getAvatarColor(chat.participant.name) }}
                   >
-                    {conv.initials}
+                    {chat.participant.initials}
                   </div>
                 </div>
 
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between mb-1">
                     <h3 className="font-semibold text-gray-900 text-sm truncate">
-                      {conv.participantName}
+                      {chat.participant.name}
                     </h3>
+                    {chat.lastMessage && (
+                      <span className="text-xs text-gray-500 ml-2">
+                        {formatTime(chat.lastMessage.timestamp)}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-600 truncate">
-                      {conv.lastMessage}
+                      {chat.lastMessage?.content || 'Start chatting'}
                     </p>
-                    {conv.unreadCount > 0 && (
-                      <span className="ml-2 px-2 py-0.5 bg-[#04ADEE] text-white text-xs rounded-full">
-                        {conv.unreadCount}
+                    {chat.unreadCount > 0 && (
+                      <span className="ml-2 px-2 py-0.5 bg-[#04ADEE] text-white text-xs rounded-full flex-shrink-0">
+                        {chat.unreadCount}
                       </span>
                     )}
                   </div>
@@ -346,7 +464,7 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
         </div>
       </div>
 
-      {selectedConversation ? (
+      {selectedChat ? (
         <div className={`${showMobileConversations ? 'hidden' : 'flex'} lg:flex flex-1 flex-col`}>
           <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -359,14 +477,14 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
               <div className="relative">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
-                  style={{ backgroundColor: selectedConversation.avatarColor }}
+                  style={{ backgroundColor: getAvatarColor(selectedChat.participant.name) }}
                 >
-                  {selectedConversation.initials}
+                  {selectedChat.participant.initials}
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">{selectedConversation.participantName}</h3>
-                <p className="text-xs text-gray-500 capitalize">{selectedConversation.participantRole}</p>
+                <h3 className="font-semibold text-gray-900">{selectedChat.participant.name}</h3>
+                <p className="text-xs text-gray-500 capitalize">{selectedChat.participant.role}</p>
               </div>
             </div>
 
@@ -377,7 +495,7 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -387,6 +505,16 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
               </div>
             ) : (
               messages.map(renderMessage)
+            )}
+            {uploadingFile && uploadingFile.status === 'uploading' && (
+              <div className="flex justify-end mb-4">
+                <div className="bg-[#04ADEE] text-white px-4 py-2 rounded-2xl rounded-br-sm">
+                  <div className="flex items-center space-x-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Uploading... {Math.round(uploadingFile.progress)}%</span>
+                  </div>
+                </div>
+              </div>
             )}
             <div ref={messagesEndRef} />
           </div>
@@ -402,20 +530,27 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
                 </button>
 
                 {showAttachMenu && (
-                  <div className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-lg border border-gray-200 py-2 w-48">
+                  <div className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-lg border border-gray-200 py-2 w-48 z-10">
                     <button
-                      onClick={() => handleFileAttach('image')}
+                      onClick={() => handleAttachClick('image')}
                       className="w-full px-4 py-2 flex items-center space-x-3 hover:bg-gray-50 transition-colors text-left"
                     >
                       <ImageIcon className="w-5 h-5 text-blue-600" />
-                      <span className="text-sm text-gray-700">Upload Image</span>
+                      <span className="text-sm text-gray-700">Image</span>
                     </button>
                     <button
-                      onClick={() => handleFileAttach('document')}
+                      onClick={() => handleAttachClick('video')}
+                      className="w-full px-4 py-2 flex items-center space-x-3 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <Video className="w-5 h-5 text-purple-600" />
+                      <span className="text-sm text-gray-700">Video</span>
+                    </button>
+                    <button
+                      onClick={() => handleAttachClick('file')}
                       className="w-full px-4 py-2 flex items-center space-x-3 hover:bg-gray-50 transition-colors text-left"
                     >
                       <FileText className="w-5 h-5 text-green-600" />
-                      <span className="text-sm text-gray-700">Upload Document</span>
+                      <span className="text-sm text-gray-700">File</span>
                     </button>
                   </div>
                 )}
@@ -428,27 +563,40 @@ const Chat: React.FC<ChatProps> = ({ userRole: propUserRole }) => {
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
                   placeholder="Type a message..."
-                  className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#04ADEE] pr-10"
+                  className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#04ADEE]"
+                  disabled={uploadingFile !== null}
                 />
-                <button className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-200 rounded transition-colors">
-                  <Smile className="w-5 h-5 text-gray-600" />
-                </button>
               </div>
 
               <button
                 onClick={handleSendMessage}
-                disabled={!messageInput.trim() || sending}
+                disabled={!messageInput.trim() || sending || uploadingFile !== null}
                 className="p-3 bg-[#04ADEE] hover:bg-[#0396d5] disabled:bg-gray-300 disabled:cursor-not-allowed rounded-full transition-colors"
               >
-                <Send className="w-5 h-5 text-white" />
+                {sending ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Send className="w-5 h-5 text-white" />}
               </button>
             </div>
 
             <input
+              ref={imageInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*"
+              onChange={(e) => handleFileSelect(e, 'image')}
+            />
+            <input
+              ref={videoInputRef}
+              type="file"
+              className="hidden"
+              accept="video/*"
+              onChange={(e) => handleFileSelect(e, 'video')}
+            />
+            <input
               ref={fileInputRef}
               type="file"
               className="hidden"
-              accept="image/*,.pdf,.doc,.docx"
+              accept=".pdf,.doc,.docx,.txt,.xlsx,.xls,.ppt,.pptx"
+              onChange={(e) => handleFileSelect(e, 'file')}
             />
           </div>
         </div>
