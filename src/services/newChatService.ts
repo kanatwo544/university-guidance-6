@@ -184,6 +184,7 @@ export const subscribeToMessages = (
     callback(sortedMessages);
 
     await markMessagesAsDelivered(chatId, uid1);
+    await markMessagesAsSeen(userName1, userName2);
   });
 
   return () => {

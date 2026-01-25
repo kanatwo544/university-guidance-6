@@ -591,9 +591,9 @@ export default function CounselorDashboard({ counselor, onLogout }: CounselorDas
         </div>
       </aside>
 
-      <main className={`flex-1 overflow-y-auto transition-all duration-300 ${
+      <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'ml-20' : 'ml-72'
-      }`}>
+      } ${activeTab === 'inbox' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
         {(activeTab === 'active' || activeTab === 'assigned') && (
           <div className="bg-gradient-to-r from-[#04ADEE]/10 via-emerald-50 to-[#04ADEE]/10 border-b border-[#04ADEE]/20">
             <div className="px-8 py-6">
