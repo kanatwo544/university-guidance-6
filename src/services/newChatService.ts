@@ -1,5 +1,5 @@
 import { database } from '../config/firebase';
-import { ref, get, set, push, onValue, off, query, orderByKey } from 'firebase/database';
+import { ref, get, set, push, onValue, off, query, orderByKey, update } from 'firebase/database';
 
 export type MessageType = 'text' | 'image' | 'video' | 'file';
 export type MessageStatus = 'sent' | 'delivered' | 'seen';
@@ -109,7 +109,7 @@ export const sendMessage = async (
     };
     updates[`Inbox/${chatId}/unreadCount/${receiverId}`] = await getUnreadCount(chatId, receiverId) + 1;
 
-    await set(ref(database), updates);
+    await update(ref(database), updates);
 
     console.log('✅ Message sent successfully');
   } catch (error) {
@@ -209,7 +209,7 @@ const markMessagesAsDelivered = async (chatId: string, userId: string): Promise<
     });
 
     if (Object.keys(updates).length > 0) {
-      await set(ref(database), updates);
+      await update(ref(database), updates);
     }
   } catch (error) {
     console.error('Error marking messages as delivered:', error);
@@ -243,7 +243,7 @@ export const markMessagesAsSeen = async (
     updates[`Inbox/${chatId}/unreadCount/${uid1}`] = 0;
 
     if (Object.keys(updates).length > 0) {
-      await set(ref(database), updates);
+      await update(ref(database), updates);
     }
   } catch (error) {
     console.error('Error marking messages as seen:', error);
