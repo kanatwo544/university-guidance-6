@@ -81,7 +81,7 @@ export const sendMessage = async (
     const receiverId = getUserId(receiverName);
     const chatId = createChatId(senderId, receiverId);
 
-    const messageId = push(ref(database, `Inbox/${chatId}/messages`)).key;
+    const messageId = push(ref(database, `University Data/Inbox/${chatId}/messages`)).key;
     if (!messageId) throw new Error('Failed to generate message ID');
 
     const timestamp = Date.now();
@@ -99,15 +99,15 @@ export const sendMessage = async (
     };
 
     const updates: { [key: string]: any } = {};
-    updates[`Inbox/${chatId}/participants/${senderId}`] = true;
-    updates[`Inbox/${chatId}/participants/${receiverId}`] = true;
-    updates[`Inbox/${chatId}/messages/${messageId}`] = messageData;
-    updates[`Inbox/${chatId}/lastMessage`] = {
+    updates[`University Data/Inbox/${chatId}/participants/${senderId}`] = true;
+    updates[`University Data/Inbox/${chatId}/participants/${receiverId}`] = true;
+    updates[`University Data/Inbox/${chatId}/messages/${messageId}`] = messageData;
+    updates[`University Data/Inbox/${chatId}/lastMessage`] = {
       content: type === 'text' ? content : `Sent a ${type}`,
       type,
       timestamp,
     };
-    updates[`Inbox/${chatId}/unreadCount/${receiverId}`] = await getUnreadCount(chatId, receiverId) + 1;
+    updates[`University Data/Inbox/${chatId}/unreadCount/${receiverId}`] = await getUnreadCount(chatId, receiverId) + 1;
 
     await update(ref(database), updates);
 
@@ -127,7 +127,7 @@ export const getMessages = async (
     const uid2 = getUserId(userName2);
     const chatId = createChatId(uid1, uid2);
 
-    const messagesRef = ref(database, `Inbox/${chatId}/messages`);
+    const messagesRef = ref(database, `University Data/Inbox/${chatId}/messages`);
     const snapshot = await get(messagesRef);
 
     if (!snapshot.exists()) {
@@ -161,7 +161,7 @@ export const subscribeToMessages = (
   const uid2 = getUserId(userName2);
   const chatId = createChatId(uid1, uid2);
 
-  const messagesRef = ref(database, `Inbox/${chatId}/messages`);
+  const messagesRef = ref(database, `University Data/Inbox/${chatId}/messages`);
 
   const listener = onValue(messagesRef, async (snapshot) => {
     if (!snapshot.exists()) {
@@ -193,7 +193,7 @@ export const subscribeToMessages = (
 
 const markMessagesAsDelivered = async (chatId: string, userId: string): Promise<void> => {
   try {
-    const messagesRef = ref(database, `Inbox/${chatId}/messages`);
+    const messagesRef = ref(database, `University Data/Inbox/${chatId}/messages`);
     const snapshot = await get(messagesRef);
 
     if (!snapshot.exists()) return;
@@ -204,7 +204,7 @@ const markMessagesAsDelivered = async (chatId: string, userId: string): Promise<
     Object.keys(messagesData).forEach((messageId) => {
       const message = messagesData[messageId];
       if (message.receiverId === userId && message.status === 'sent') {
-        updates[`Inbox/${chatId}/messages/${messageId}/status`] = 'delivered';
+        updates[`University Data/Inbox/${chatId}/messages/${messageId}/status`] = 'delivered';
       }
     });
 
@@ -225,7 +225,7 @@ export const markMessagesAsSeen = async (
     const uid2 = getUserId(userName2);
     const chatId = createChatId(uid1, uid2);
 
-    const messagesRef = ref(database, `Inbox/${chatId}/messages`);
+    const messagesRef = ref(database, `University Data/Inbox/${chatId}/messages`);
     const snapshot = await get(messagesRef);
 
     if (!snapshot.exists()) return;
@@ -236,11 +236,11 @@ export const markMessagesAsSeen = async (
     Object.keys(messagesData).forEach((messageId) => {
       const message = messagesData[messageId];
       if (message.receiverId === uid1 && message.status !== 'seen') {
-        updates[`Inbox/${chatId}/messages/${messageId}/status`] = 'seen';
+        updates[`University Data/Inbox/${chatId}/messages/${messageId}/status`] = 'seen';
       }
     });
 
-    updates[`Inbox/${chatId}/unreadCount/${uid1}`] = 0;
+    updates[`University Data/Inbox/${chatId}/unreadCount/${uid1}`] = 0;
 
     if (Object.keys(updates).length > 0) {
       await update(ref(database), updates);
@@ -252,7 +252,7 @@ export const markMessagesAsSeen = async (
 
 const getUnreadCount = async (chatId: string, userId: string): Promise<number> => {
   try {
-    const countRef = ref(database, `Inbox/${chatId}/unreadCount/${userId}`);
+    const countRef = ref(database, `University Data/Inbox/${chatId}/unreadCount/${userId}`);
     const snapshot = await get(countRef);
     return snapshot.exists() ? snapshot.val() : 0;
   } catch (error) {
@@ -273,7 +273,7 @@ export const getChatList = async (
       const participantId = getUserId(participant.name);
       const chatId = createChatId(currentUserId, participantId);
 
-      const lastMessageRef = ref(database, `Inbox/${chatId}/lastMessage`);
+      const lastMessageRef = ref(database, `University Data/Inbox/${chatId}/lastMessage`);
       const lastMessageSnapshot = await get(lastMessageRef);
 
       const unreadCount = await getUnreadCount(chatId, currentUserId);
@@ -302,8 +302,8 @@ export const subscribeToChat = (
   currentUserId: string,
   callback: (chatItem: { lastMessage: any; unreadCount: number }) => void
 ): (() => void) => {
-  const lastMessageRef = ref(database, `Inbox/${chatId}/lastMessage`);
-  const unreadCountRef = ref(database, `Inbox/${chatId}/unreadCount/${currentUserId}`);
+  const lastMessageRef = ref(database, `University Data/Inbox/${chatId}/lastMessage`);
+  const unreadCountRef = ref(database, `University Data/Inbox/${chatId}/unreadCount/${currentUserId}`);
 
   const lastMessageListener = onValue(lastMessageRef, async (snapshot) => {
     const lastMessage = snapshot.exists() ? snapshot.val() : null;

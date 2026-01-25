@@ -561,7 +561,12 @@ const Chat: React.FC<ChatProps> = () => {
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !sending && messageInput.trim()) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
                   placeholder="Type a message..."
                   className="w-full px-4 py-3 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#04ADEE]"
                   disabled={uploadingFile !== null}
