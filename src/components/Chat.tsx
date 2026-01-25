@@ -29,6 +29,7 @@ import {
   ChatParticipant,
 } from '../services/newChatService';
 import { uploadMedia, getMediaTypeFromFile, formatFileSize, UploadProgress } from '../services/mediaUploadService';
+import { initializePresence, subscribeToPresence, PresenceData, formatLastActive } from '../services/presenceService';
 
 interface ChatProps {
   userRole?: 'student' | 'counselor';
@@ -46,6 +47,7 @@ const Chat: React.FC<ChatProps> = () => {
   const [showMobileConversations, setShowMobileConversations] = useState(true);
   const [sending, setSending] = useState(false);
   const [uploadingFile, setUploadingFile] = useState<UploadProgress | null>(null);
+  const [presenceMap, setPresenceMap] = useState<Map<string, PresenceData>>(new Map());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +55,8 @@ const Chat: React.FC<ChatProps> = () => {
   const videoInputRef = useRef<HTMLInputElement>(null);
   const unsubscribeMessagesRef = useRef<(() => void) | null>(null);
   const chatSubscriptionsRef = useRef<Map<string, () => void>>(new Map());
+  const presenceSubscriptionsRef = useRef<Map<string, () => void>>(new Map());
+  const cleanupPresenceRef = useRef<(() => void) | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -84,6 +88,8 @@ const Chat: React.FC<ChatProps> = () => {
         console.log('✅ User role detected:', roleInfo);
         setUserInfo(roleInfo);
 
+        cleanupPresenceRef.current = initializePresence(roleInfo.userName);
+
         const members = await getSchoolMembers(
           roleInfo.schoolName,
           roleInfo.userName,
@@ -106,8 +112,8 @@ const Chat: React.FC<ChatProps> = () => {
           if (!chatSubscriptionsRef.current.has(chat.chatId)) {
             const currentUserId = user.name.replace(/\s+/g, '_').toLowerCase();
             const unsubscribe = subscribeToChat(chat.chatId, currentUserId, (updates) => {
-              setChatList((prev) =>
-                prev.map((item) =>
+              setChatList((prev) => {
+                const updated = prev.map((item) =>
                   item.chatId === chat.chatId
                     ? {
                         ...item,
@@ -115,11 +121,30 @@ const Chat: React.FC<ChatProps> = () => {
                         unreadCount: updates.unreadCount,
                       }
                     : item
-                )
-              );
+                );
+                return updated.sort((a, b) => {
+                  const timeA = a.lastMessage?.timestamp || 0;
+                  const timeB = b.lastMessage?.timestamp || 0;
+                  return timeB - timeA;
+                });
+              });
             });
 
             chatSubscriptionsRef.current.set(chat.chatId, unsubscribe);
+          }
+
+          if (!presenceSubscriptionsRef.current.has(chat.participant.name)) {
+            const unsubscribePresence = subscribeToPresence(chat.participant.name, (presence) => {
+              if (presence) {
+                setPresenceMap((prev) => {
+                  const newMap = new Map(prev);
+                  newMap.set(chat.participant.name, presence);
+                  return newMap;
+                });
+              }
+            });
+
+            presenceSubscriptionsRef.current.set(chat.participant.name, unsubscribePresence);
           }
         });
 
@@ -136,8 +161,13 @@ const Chat: React.FC<ChatProps> = () => {
       if (unsubscribeMessagesRef.current) {
         unsubscribeMessagesRef.current();
       }
+      if (cleanupPresenceRef.current) {
+        cleanupPresenceRef.current();
+      }
       chatSubscriptionsRef.current.forEach((unsubscribe) => unsubscribe());
       chatSubscriptionsRef.current.clear();
+      presenceSubscriptionsRef.current.forEach((unsubscribe) => unsubscribe());
+      presenceSubscriptionsRef.current.clear();
     };
   }, []);
 
@@ -359,7 +389,6 @@ const Chat: React.FC<ChatProps> = () => {
                 }`}
               >
                 {renderMediaContent(message)}
-                {message.type === 'text' && <p className="text-sm">{message.content}</p>}
               </div>
 
               <div className={`flex items-center space-x-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
@@ -438,11 +467,22 @@ const Chat: React.FC<ChatProps> = () => {
 
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-gray-900 text-sm truncate">
-                      {chat.participant.name}
-                    </h3>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm truncate">
+                        {chat.participant.name}
+                      </h3>
+                      {presenceMap.has(chat.participant.name) && (
+                        <p className="text-xs text-gray-500">
+                          {presenceMap.get(chat.participant.name)?.status === 'online' ? (
+                            <span className="text-green-600">Active now</span>
+                          ) : (
+                            formatLastActive(presenceMap.get(chat.participant.name)!.lastActive)
+                          )}
+                        </p>
+                      )}
+                    </div>
                     {chat.lastMessage && (
-                      <span className="text-xs text-gray-500 ml-2">
+                      <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
                         {formatTime(chat.lastMessage.timestamp)}
                       </span>
                     )}
@@ -484,7 +524,17 @@ const Chat: React.FC<ChatProps> = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">{selectedChat.participant.name}</h3>
-                <p className="text-xs text-gray-500 capitalize">{selectedChat.participant.role}</p>
+                {presenceMap.has(selectedChat.participant.name) ? (
+                  <p className="text-xs text-gray-500">
+                    {presenceMap.get(selectedChat.participant.name)?.status === 'online' ? (
+                      <span className="text-green-600">Active now</span>
+                    ) : (
+                      formatLastActive(presenceMap.get(selectedChat.participant.name)!.lastActive)
+                    )}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-500 capitalize">{selectedChat.participant.role}</p>
+                )}
               </div>
             </div>
 
