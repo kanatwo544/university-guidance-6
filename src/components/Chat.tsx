@@ -29,7 +29,7 @@ import {
   ChatParticipant,
 } from '../services/newChatService';
 import { uploadMedia, getMediaTypeFromFile, formatFileSize, UploadProgress } from '../services/mediaUploadService';
-import { initializePresence, subscribeToPresence, PresenceData, formatLastActive } from '../services/presenceService';
+import { subscribeToPresence, PresenceData, formatLastActive } from '../services/presenceService';
 
 interface ChatProps {
   userRole?: 'student' | 'counselor';
@@ -56,7 +56,6 @@ const Chat: React.FC<ChatProps> = () => {
   const unsubscribeMessagesRef = useRef<(() => void) | null>(null);
   const chatSubscriptionsRef = useRef<Map<string, () => void>>(new Map());
   const presenceSubscriptionsRef = useRef<Map<string, () => void>>(new Map());
-  const cleanupPresenceRef = useRef<(() => void) | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -87,8 +86,6 @@ const Chat: React.FC<ChatProps> = () => {
 
         console.log('✅ User role detected:', roleInfo);
         setUserInfo(roleInfo);
-
-        cleanupPresenceRef.current = initializePresence(roleInfo.userName);
 
         const members = await getSchoolMembers(
           roleInfo.schoolName,
@@ -160,9 +157,6 @@ const Chat: React.FC<ChatProps> = () => {
     return () => {
       if (unsubscribeMessagesRef.current) {
         unsubscribeMessagesRef.current();
-      }
-      if (cleanupPresenceRef.current) {
-        cleanupPresenceRef.current();
       }
       chatSubscriptionsRef.current.forEach((unsubscribe) => unsubscribe());
       chatSubscriptionsRef.current.clear();

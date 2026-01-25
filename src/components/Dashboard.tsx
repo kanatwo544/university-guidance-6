@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X } from 'lucide-react';
 import { User } from '../services/authService';
 import Sidebar from './Sidebar';
@@ -12,6 +12,7 @@ import Counselors from './Counselors';
 import Chat from './Chat';
 import EssayEditor from './EssayEditor';
 import MeetingBookingPage from './MeetingBookingPage';
+import { initializePresence } from '../services/presenceService';
 
 export type Page = 'profile' | 'admit-profiles' | 'scholarships' | 'applications' | 'resources' | 'counselors' | 'chat' | 'profile-details' | 'essay-editor' | 'meeting-booking';
 
@@ -29,6 +30,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
   const [selectedCounselorName, setSelectedCounselorName] = useState<string>('');
   const [selectedEssayTitle, setSelectedEssayTitle] = useState<string | null>(null);
   const [returnToProfile, setReturnToProfile] = useState(false);
+  const cleanupPresenceRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (user?.name) {
+      cleanupPresenceRef.current = initializePresence(user.name);
+    }
+
+    return () => {
+      if (cleanupPresenceRef.current) {
+        cleanupPresenceRef.current();
+      }
+    };
+  }, [user?.name]);
 
   const renderPage = () => {
     switch (currentPage) {

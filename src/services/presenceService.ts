@@ -14,12 +14,21 @@ export const initializePresence = (userName: string): (() => void) => {
   const userId = getUserId(userName);
   const presenceRef = ref(database, `University Data/Presence/${userId}`);
 
-  const presenceData = {
-    status: 'online',
-    lastActive: Date.now(),
+  const setOnline = () => {
+    set(presenceRef, {
+      status: 'online',
+      lastActive: Date.now(),
+    });
   };
 
-  set(presenceRef, presenceData);
+  const setOffline = () => {
+    set(presenceRef, {
+      status: 'offline',
+      lastActive: Date.now(),
+    });
+  };
+
+  setOnline();
 
   const disconnectRef = onDisconnect(presenceRef);
   disconnectRef.set({
@@ -28,18 +37,37 @@ export const initializePresence = (userName: string): (() => void) => {
   });
 
   const intervalId = setInterval(() => {
-    set(presenceRef, {
-      status: 'online',
-      lastActive: Date.now(),
-    });
+    if (document.visibilityState === 'visible') {
+      setOnline();
+    }
   }, 60000);
+
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      setOffline();
+    } else {
+      setOnline();
+    }
+  };
+
+  const handleWindowBlur = () => {
+    setOffline();
+  };
+
+  const handleWindowFocus = () => {
+    setOnline();
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('blur', handleWindowBlur);
+  window.addEventListener('focus', handleWindowFocus);
 
   return () => {
     clearInterval(intervalId);
-    set(presenceRef, {
-      status: 'offline',
-      lastActive: Date.now(),
-    });
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('blur', handleWindowBlur);
+    window.removeEventListener('focus', handleWindowFocus);
+    setOffline();
   };
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { TrendingUp, Award, BookOpen, X, Users, UserCheck, LogOut, ChevronLeft, ChevronRight, GraduationCap, FileText, Calendar, MessageSquare, User, Settings, Search, FolderOpen } from 'lucide-react';
 import CounselorScholarshipsPage from './CounselorScholarshipsPage';
 import CounselorResourcesPage from './CounselorResourcesPage';
@@ -17,6 +17,7 @@ import { useNotificationCounts } from '../hooks/useNotificationCounts';
 import { getCounselorPoolData, PoolStudent } from '../services/poolManagementService';
 import { getAssignedStudentsFromFirebase, FirebaseAssignedStudent } from '../services/assignedStudentsService';
 import WeightingModal from './WeightingModal';
+import { initializePresence } from '../services/presenceService';
 
 type TabType = 'academic' | 'active' | 'assigned' | 'essays' | 'scholarships' | 'resources' | 'meetings' | 'inbox' | 'student_profiles' | 'educare-drive';
 type CompositeFilter = 'all' | '90-100' | '80-89' | '70-79' | 'below-70';
@@ -193,6 +194,19 @@ export default function CounselorDashboard({ counselor, onLogout }: CounselorDas
     progress: number;
   } | null>(null);
   const { counts } = useNotificationCounts(counselor.id, counselor.name);
+  const cleanupPresenceRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (counselor.name) {
+      cleanupPresenceRef.current = initializePresence(counselor.name);
+    }
+
+    return () => {
+      if (cleanupPresenceRef.current) {
+        cleanupPresenceRef.current();
+      }
+    };
+  }, [counselor.name]);
 
   const fetchPoolData = async () => {
     if (counselor.role === 'pool_management') {
@@ -593,7 +607,7 @@ export default function CounselorDashboard({ counselor, onLogout }: CounselorDas
 
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'ml-20' : 'ml-72'
-      } ${activeTab === 'inbox' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+      } ${activeTab === 'inbox' ? 'h-screen overflow-hidden' : 'overflow-y-auto'}`}>
         {(activeTab === 'active' || activeTab === 'assigned') && (
           <div className="bg-gradient-to-r from-[#04ADEE]/10 via-emerald-50 to-[#04ADEE]/10 border-b border-[#04ADEE]/20">
             <div className="px-8 py-6">
