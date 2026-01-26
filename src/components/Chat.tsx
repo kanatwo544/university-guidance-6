@@ -501,14 +501,14 @@ const Chat: React.FC<ChatProps> = () => {
       {selectedChat ? (
         <div className={`${showMobileConversations ? 'hidden' : 'flex'} lg:flex flex-1 flex-col`}>
           <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
               <button
                 onClick={() => setShowMobileConversations(true)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
+                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg flex-shrink-0"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
                   style={{ backgroundColor: getAvatarColor(selectedChat.participant.name) }}
@@ -516,8 +516,8 @@ const Chat: React.FC<ChatProps> = () => {
                   {selectedChat.participant.initials}
                 </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{selectedChat.participant.name}</h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900 truncate">{selectedChat.participant.name}</h3>
                 {presenceMap.has(selectedChat.participant.name) ? (
                   <p className="text-xs text-gray-500">
                     {presenceMap.get(selectedChat.participant.name)?.status === 'online' ? (
@@ -532,7 +532,7 @@ const Chat: React.FC<ChatProps> = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 flex-shrink-0">
               <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <MoreVertical className="w-5 h-5 text-gray-600" />
               </button>
