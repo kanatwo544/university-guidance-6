@@ -412,7 +412,7 @@ const Chat: React.FC<ChatProps> = () => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
+    <div className="flex h-full overflow-hidden bg-white">
       <div
         className={`${
           showMobileConversations ? 'block' : 'hidden'
