@@ -110,12 +110,12 @@ export default function WeightingModal({ counselorName, onClose, onSave }: Weigh
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
+        <div className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Pool Weighting Settings</h2>
-            <p className="text-sm text-slate-600 mt-1">Configure composite score calculation and ranges</p>
+            <h2 className="text-base sm:text-xl font-bold text-slate-900">Pool Weighting Settings</h2>
+            <p className="text-xs sm:text-sm text-slate-600 mt-1">Configure composite score calculation</p>
           </div>
           <button
             onClick={onClose}
@@ -125,7 +125,7 @@ export default function WeightingModal({ counselorName, onClose, onSave }: Weigh
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -137,16 +137,16 @@ export default function WeightingModal({ counselorName, onClose, onSave }: Weigh
           )}
 
           <div>
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Composite Score Weights</h3>
-            <p className="text-sm text-slate-600 mb-4">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 sm:mb-4">Composite Score Weights</h3>
+            <p className="text-xs sm:text-sm text-slate-600 mb-3 sm:mb-4">
               Set the weight for each component. Total must equal 100%.
             </p>
 
-            <div className="space-y-4">
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="bg-slate-50 rounded-lg p-3 sm:p-4 border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-slate-900">Essays and Activities</label>
-                  <span className="text-lg font-bold text-[#04ADEE]">{essayWeight}%</span>
+                  <label className="text-xs sm:text-sm font-semibold text-slate-900">Essays and Activities</label>
+                  <span className="text-base sm:text-lg font-bold text-[#04ADEE]">{essayWeight}%</span>
                 </div>
                 <input
                   type="range"
@@ -158,10 +158,10 @@ export default function WeightingModal({ counselorName, onClose, onSave }: Weigh
                 />
               </div>
 
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+              <div className="bg-slate-50 rounded-lg p-3 sm:p-4 border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-slate-900">Current Average</label>
-                  <span className="text-lg font-bold text-[#04ADEE]">{currentAverageWeight}%</span>
+                  <label className="text-xs sm:text-sm font-semibold text-slate-900">Current Average</label>
+                  <span className="text-base sm:text-lg font-bold text-[#04ADEE]">{currentAverageWeight}%</span>
                 </div>
                 <input
                   type="range"
@@ -173,10 +173,10 @@ export default function WeightingModal({ counselorName, onClose, onSave }: Weigh
                 />
               </div>
 
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+              <div className="bg-slate-50 rounded-lg p-3 sm:p-4 border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-slate-900">Past Overall Average</label>
-                  <span className="text-lg font-bold text-[#04ADEE]">{pastAverageWeight}%</span>
+                  <label className="text-xs sm:text-sm font-semibold text-slate-900">Past Overall Average</label>
+                  <span className="text-base sm:text-lg font-bold text-[#04ADEE]">{pastAverageWeight}%</span>
                 </div>
                 <input
                   type="range"

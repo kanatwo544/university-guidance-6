@@ -117,12 +117,12 @@ export default function AssignmentModal({ student, counselorId, onClose, onCompl
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="px-6 py-4 border-b border-slate-200">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col mx-2 sm:mx-0">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-200">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Assign Universities</h2>
-              <p className="text-sm text-slate-600 mt-1">{student.name}</p>
+              <h2 className="text-lg sm:text-2xl font-bold text-slate-900">Assign Universities</h2>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1">{student.name}</p>
             </div>
             <button
               onClick={onClose}
@@ -132,29 +132,29 @@ export default function AssignmentModal({ student, counselorId, onClose, onCompl
             </button>
           </div>
 
-          <div className="grid grid-cols-4 gap-3">
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <p className="text-xs text-slate-600 mb-1">Composite</p>
-              <p className="text-lg font-bold text-slate-900">{student.composite_score.toFixed(1)}%</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            <div className="bg-slate-50 rounded-lg p-2 sm:p-3 border border-slate-200">
+              <p className="text-[10px] sm:text-xs text-slate-600 mb-0.5 sm:mb-1">Composite</p>
+              <p className="text-sm sm:text-lg font-bold text-slate-900">{student.composite_score.toFixed(1)}%</p>
             </div>
-            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-              <p className="text-xs text-blue-600 mb-1">Current Average</p>
-              <p className="text-lg font-bold text-blue-700">{student.academic_performance.toFixed(1)}%</p>
+            <div className="bg-blue-50 rounded-lg p-2 sm:p-3 border border-blue-200">
+              <p className="text-[10px] sm:text-xs text-blue-600 mb-0.5 sm:mb-1">Current Avg</p>
+              <p className="text-sm sm:text-lg font-bold text-blue-700">{student.academic_performance.toFixed(1)}%</p>
             </div>
-            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-              <p className="text-xs text-purple-600 mb-1">Essays & Activities</p>
-              <p className="text-lg font-bold text-purple-700">{student.essay_activities_rating.toFixed(1)}%</p>
+            <div className="bg-purple-50 rounded-lg p-2 sm:p-3 border border-purple-200">
+              <p className="text-[10px] sm:text-xs text-purple-600 mb-0.5 sm:mb-1">Essays</p>
+              <p className="text-sm sm:text-lg font-bold text-purple-700">{student.essay_activities_rating.toFixed(1)}%</p>
             </div>
-            <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-              <p className="text-xs text-amber-600 mb-1">Previous Average</p>
-              <p className="text-lg font-bold text-amber-700">
+            <div className="bg-amber-50 rounded-lg p-2 sm:p-3 border border-amber-200">
+              <p className="text-[10px] sm:text-xs text-amber-600 mb-0.5 sm:mb-1">Previous Avg</p>
+              <p className="text-sm sm:text-lg font-bold text-amber-700">
                 {((student.academic_performance || 0) - (student.academic_trend || 0)).toFixed(1)}%
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="mb-6 p-4 bg-[#04ADEE]/10 rounded-lg border border-[#04ADEE]/30">
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#04ADEE] mb-2">
@@ -213,7 +213,7 @@ export default function AssignmentModal({ student, counselorId, onClose, onCompl
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Add University
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={currentName}

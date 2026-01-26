@@ -12,6 +12,7 @@ import DesktopDashboard from './components/Dashboard';
 // Mobile Components
 import MobileLogin from './components/mobile/MobileLogin';
 import MobileDashboard from './components/mobile/MobileDashboard';
+import MobileCounselorDashboard from './components/mobile/MobileCounselorDashboard';
 
 // Counselor Components
 import CounselorDashboard from './components/CounselorDashboard';
@@ -76,6 +77,13 @@ function App() {
   }
 
   if (mode === 'counselor' && isAuthenticated && currentCounselor) {
+    if (deviceType === 'mobile') {
+      return (
+        <div className="App">
+          <MobileCounselorDashboard counselor={currentCounselor} onLogout={handleLogout} />
+        </div>
+      );
+    }
     return (
       <div className="App">
         <CounselorDashboard counselor={currentCounselor} onLogout={handleLogout} />
