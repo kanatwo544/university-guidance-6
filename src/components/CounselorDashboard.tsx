@@ -608,99 +608,98 @@ export default function CounselorDashboard({ counselor, onLogout }: CounselorDas
       <main className={`flex-1 transition-all duration-300 ${
         sidebarCollapsed ? 'ml-20' : 'ml-72'
       } ${activeTab === 'inbox' ? 'h-screen overflow-hidden' : 'overflow-y-auto'}`}>
-        {(activeTab === 'active' || activeTab === 'assigned') && (
-          <div className="bg-gradient-to-r from-[#04ADEE]/10 via-emerald-50 to-[#04ADEE]/10 border-b border-[#04ADEE]/20">
-            <div className="px-8 py-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="w-6 h-6 text-[#04ADEE]" />
-                  <h1 className="text-2xl font-bold text-slate-900">Pool Management Dashboard</h1>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setShowWeightingModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 hover:border-[#04ADEE] text-slate-700 hover:text-[#04ADEE] rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Set Weighting
-                  </button>
-                  <div className="flex items-center gap-2 bg-emerald-500 px-3 py-1.5 rounded-full">
-                    <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                    <span className="text-xs font-semibold text-white">Active</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4 text-slate-500" />
-                    <span className="text-xs font-medium text-slate-600">Active Pool</span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-slate-900">
-                      <AnimatedCounter end={filteredAndSortedStudents.length} duration={1500} />
-                    </span>
-                    <span className="text-sm text-slate-600">Students</span>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <UserCheck className="w-4 h-4 text-slate-500" />
-                    <span className="text-xs font-medium text-slate-600">Assigned</span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-slate-900">
-                      <AnimatedCounter end={totalAssigned} duration={1500} />
-                    </span>
-                    <span className="text-sm text-slate-600">Students</span>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-slate-500" />
-                    <span className="text-xs font-medium text-slate-600">Avg Strength</span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-[#04ADEE]">
-                      <AnimatedCounter end={avgStrength} duration={1500} decimals={1} />
-                    </span>
-                    <span className="text-sm text-slate-600">%</span>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-medium text-slate-600">Progress</span>
-                  </div>
-                  <div className="mb-2">
-                    <span className="text-lg font-bold text-slate-900">
-                      <AnimatedCounter end={totalAssigned} duration={1500} /> / <AnimatedCounter end={totalOriginal} duration={1500} />
-                    </span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-500"
-                      style={{ width: `${(totalAssigned / totalOriginal) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="px-8 py-6">
-
-        {activeTab === 'academic' && (
-          <AcademicTracking />
-        )}
-
-        {activeTab === 'inbox' && (
+        {activeTab === 'inbox' ? (
           <Chat userRole="counselor" />
-        )}
+        ) : (
+          <>
+            {(activeTab === 'active' || activeTab === 'assigned') && (
+              <div className="bg-gradient-to-r from-[#04ADEE]/10 via-emerald-50 to-[#04ADEE]/10 border-b border-[#04ADEE]/20">
+                <div className="px-8 py-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="w-6 h-6 text-[#04ADEE]" />
+                      <h1 className="text-2xl font-bold text-slate-900">Pool Management Dashboard</h1>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setShowWeightingModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 hover:border-[#04ADEE] text-slate-700 hover:text-[#04ADEE] rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Set Weighting
+                      </button>
+                      <div className="flex items-center gap-2 bg-emerald-500 px-3 py-1.5 rounded-full">
+                        <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        <span className="text-xs font-semibold text-white">Active</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="w-4 h-4 text-slate-500" />
+                        <span className="text-xs font-medium text-slate-600">Active Pool</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-slate-900">
+                          <AnimatedCounter end={filteredAndSortedStudents.length} duration={1500} />
+                        </span>
+                        <span className="text-sm text-slate-600">Students</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <UserCheck className="w-4 h-4 text-slate-500" />
+                        <span className="text-xs font-medium text-slate-600">Assigned</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-slate-900">
+                          <AnimatedCounter end={totalAssigned} duration={1500} />
+                        </span>
+                        <span className="text-sm text-slate-600">Students</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-4 h-4 text-slate-500" />
+                        <span className="text-xs font-medium text-slate-600">Avg Strength</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-[#04ADEE]">
+                          <AnimatedCounter end={avgStrength} duration={1500} decimals={1} />
+                        </span>
+                        <span className="text-sm text-slate-600">%</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-medium text-slate-600">Progress</span>
+                      </div>
+                      <div className="mb-2">
+                        <span className="text-lg font-bold text-slate-900">
+                          <AnimatedCounter end={totalAssigned} duration={1500} /> / <AnimatedCounter end={totalOriginal} duration={1500} />
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 transition-all duration-500"
+                          style={{ width: `${(totalAssigned / totalOriginal) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="px-8 py-6">
+              {activeTab === 'academic' && (
+                <AcademicTracking />
+              )}
 
         {activeTab === 'essays' && (
           <EssayReview />
@@ -953,7 +952,9 @@ export default function CounselorDashboard({ counselor, onLogout }: CounselorDas
             )}
           </div>
         )}
-        </div>
+            </div>
+          </>
+        )}
       </main>
 
       {selectedStudent && (

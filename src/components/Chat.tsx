@@ -176,6 +176,8 @@ const Chat: React.FC<ChatProps> = () => {
         selectedChat.participant.name,
         (newMessages) => {
           setMessages(newMessages);
+          // Scroll to bottom after messages load
+          setTimeout(() => scrollToBottom(), 100);
         }
       );
 
