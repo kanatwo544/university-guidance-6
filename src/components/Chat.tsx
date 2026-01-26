@@ -6,8 +6,6 @@ import {
   FileText,
   Video,
   Download,
-  Check,
-  CheckCheck,
   Search,
   MoreVertical,
   X,
@@ -290,15 +288,13 @@ const Chat: React.FC<ChatProps> = () => {
     }
   };
 
-  const getStatusIcon = (status: string, isMe: boolean) => {
+  const getStatusText = (status: string, isMe: boolean) => {
     if (!isMe) return null;
 
     if (status === 'seen') {
-      return <CheckCheck className="w-4 h-4 text-blue-500" />;
-    } else if (status === 'delivered') {
-      return <CheckCheck className="w-4 h-4 text-gray-500" />;
+      return <span className="text-xs text-blue-500 font-medium">seen</span>;
     } else {
-      return <Check className="w-4 h-4 text-gray-500" />;
+      return <span className="text-xs text-gray-500">sent</span>;
     }
   };
 
@@ -389,7 +385,7 @@ const Chat: React.FC<ChatProps> = () => {
 
               <div className={`flex items-center space-x-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
                 <span className="text-xs text-gray-500">{formatMessageTime(message.timestamp)}</span>
-                {getStatusIcon(message.status, isMe)}
+                {getStatusText(message.status, isMe)}
               </div>
             </div>
           </div>
