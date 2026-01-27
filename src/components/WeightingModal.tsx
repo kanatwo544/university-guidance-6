@@ -9,8 +9,7 @@ interface WeightingModalProps {
 }
 
 export default function WeightingModal({ counselorName, onClose, onSave }: WeightingModalProps) {
-  const [essayWeight, setEssayWeight] = useState(40);
-  const [currentAverageWeight, setCurrentAverageWeight] = useState(50);
+  const [currentAverageWeight, setCurrentAverageWeight] = useState(90);
   const [pastAverageWeight, setPastAverageWeight] = useState(10);
 
   const [excellentMin, setExcellentMin] = useState(90);
@@ -36,7 +35,6 @@ export default function WeightingModal({ counselorName, onClose, onSave }: Weigh
         const weightings = await getPoolWeightings(counselorName);
 
         if (weightings) {
-          setEssayWeight(weightings.essayWeight);
           setCurrentAverageWeight(weightings.currentAverageWeight);
           setPastAverageWeight(weightings.pastAverageWeight);
 
@@ -60,7 +58,7 @@ export default function WeightingModal({ counselorName, onClose, onSave }: Weigh
     loadWeightings();
   }, [counselorName]);
 
-  const totalWeight = essayWeight + currentAverageWeight + pastAverageWeight;
+  const totalWeight = currentAverageWeight + pastAverageWeight;
   const isWeightValid = totalWeight === 100;
 
   const handleSave = async () => {
@@ -74,7 +72,7 @@ export default function WeightingModal({ counselorName, onClose, onSave }: Weigh
 
     try {
       const weightings: PoolWeightings = {
-        essayWeight,
+        essayWeight: 0,
         currentAverageWeight,
         pastAverageWeight,
         excellentMin,
@@ -143,21 +141,6 @@ export default function WeightingModal({ counselorName, onClose, onSave }: Weigh
             </p>
 
             <div className="space-y-3 sm:space-y-4">
-              <div className="bg-slate-50 rounded-lg p-3 sm:p-4 border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs sm:text-sm font-semibold text-slate-900">Essays and Activities</label>
-                  <span className="text-base sm:text-lg font-bold text-[#04ADEE]">{essayWeight}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={essayWeight}
-                  onChange={(e) => setEssayWeight(parseInt(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#04ADEE]"
-                />
-              </div>
-
               <div className="bg-slate-50 rounded-lg p-3 sm:p-4 border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs sm:text-sm font-semibold text-slate-900">Current Average</label>

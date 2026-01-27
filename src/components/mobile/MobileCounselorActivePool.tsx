@@ -245,12 +245,12 @@ const MobileCounselorActivePool: React.FC<MobileCounselorActivePoolProps> = ({ c
 
                       <div className="grid grid-cols-2 gap-2 pt-2">
                         <div>
-                          <p className="text-xs text-slate-500">Academic</p>
+                          <p className="text-xs text-slate-500">Current Average</p>
                           <p className="text-lg font-bold text-slate-900">{student.academicPerformance}%</p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-500">Essay/Activities</p>
-                          <p className="text-lg font-bold text-slate-900">{student.essayActivities}%</p>
+                          <p className="text-xs text-slate-500">Past Average</p>
+                          <p className="text-lg font-bold text-slate-900">{student.academicTrend}%</p>
                         </div>
                       </div>
 

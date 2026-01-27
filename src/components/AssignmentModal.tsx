@@ -132,7 +132,7 @@ export default function AssignmentModal({ student, counselorId, onClose, onCompl
             </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div className="bg-slate-50 rounded-lg p-2 sm:p-3 border border-slate-200">
               <p className="text-[10px] sm:text-xs text-slate-600 mb-0.5 sm:mb-1">Composite</p>
               <p className="text-sm sm:text-lg font-bold text-slate-900">{student.composite_score.toFixed(1)}%</p>
@@ -141,14 +141,10 @@ export default function AssignmentModal({ student, counselorId, onClose, onCompl
               <p className="text-[10px] sm:text-xs text-blue-600 mb-0.5 sm:mb-1">Current Avg</p>
               <p className="text-sm sm:text-lg font-bold text-blue-700">{student.academic_performance.toFixed(1)}%</p>
             </div>
-            <div className="bg-purple-50 rounded-lg p-2 sm:p-3 border border-purple-200">
-              <p className="text-[10px] sm:text-xs text-purple-600 mb-0.5 sm:mb-1">Essays</p>
-              <p className="text-sm sm:text-lg font-bold text-purple-700">{student.essay_activities_rating.toFixed(1)}%</p>
-            </div>
             <div className="bg-amber-50 rounded-lg p-2 sm:p-3 border border-amber-200">
-              <p className="text-[10px] sm:text-xs text-amber-600 mb-0.5 sm:mb-1">Previous Avg</p>
+              <p className="text-[10px] sm:text-xs text-amber-600 mb-0.5 sm:mb-1">Past Avg</p>
               <p className="text-sm sm:text-lg font-bold text-amber-700">
-                {((student.academic_performance || 0) - (student.academic_trend || 0)).toFixed(1)}%
+                {(student.academic_trend || 0).toFixed(1)}%
               </p>
             </div>
           </div>

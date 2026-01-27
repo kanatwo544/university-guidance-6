@@ -825,12 +825,6 @@ export default function CounselorDashboard({ counselor, onLogout }: CounselorDas
 
                     <div className="space-y-2.5 mb-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-500">Essay & Activities</span>
-                        <span className="text-xs font-bold text-slate-900">
-                          <AnimatedCounter end={student.essayActivities} duration={1500} />%
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-slate-500">Current Average</span>
                         <span className="text-xs font-bold text-slate-900">
                           <AnimatedCounter end={student.academicPerformance} duration={1500} />%
