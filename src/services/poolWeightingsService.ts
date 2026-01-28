@@ -16,8 +16,8 @@ export interface PoolWeightings {
 }
 
 const DEFAULT_WEIGHTINGS: PoolWeightings = {
-  essayWeight: 40,
-  currentAverageWeight: 50,
+  essayWeight: 0,
+  currentAverageWeight: 90,
   pastAverageWeight: 10,
   excellentMin: 90,
   excellentMax: 100,
@@ -125,13 +125,15 @@ export const getStrengthLabel = (
   compositeScore: number,
   weightings: PoolWeightings
 ): 'Strong' | 'Competitive' | 'Developing' => {
-  if (compositeScore >= weightings.excellentMin && compositeScore <= weightings.excellentMax) {
+  // Check from highest to lowest, using >= for boundary checks
+  // This handles gaps and ensures students are categorized based on their score
+  if (compositeScore >= weightings.excellentMin) {
     return 'Strong';
   }
-  if (compositeScore >= weightings.strongMin && compositeScore <= weightings.strongMax) {
+  if (compositeScore >= weightings.strongMin) {
     return 'Strong';
   }
-  if (compositeScore >= weightings.competitiveMin && compositeScore <= weightings.competitiveMax) {
+  if (compositeScore >= weightings.competitiveMin) {
     return 'Competitive';
   }
   return 'Developing';
